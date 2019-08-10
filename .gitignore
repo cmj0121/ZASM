@@ -1,0 +1,10 @@
+Makefile.inc
+
+*.swp
+*.swo
+*.a
+*.o
+
+cscope.out
+
+zasm
