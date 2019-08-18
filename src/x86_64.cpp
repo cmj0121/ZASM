@@ -338,13 +338,13 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 				 * REX.R	Extension to the Mod R/M.reg field
 				 * REX.W	64-bit operand size is used.
 				 */
-				if (CODE_OPERAND_SIZE_64 == (CODE_OPERAND_SIZE_64 & (dst._size_ | src._size_)) || dst._reg_ext_ || src._reg_ext_) {
+				if (0 != (CODE_OPERAND_SIZE_64 & (dst._size_ | src._size_)) || dst._reg_ext_ || src._reg_ext_) {
 					int REX_B = 0, REX_X = 0, REX_R = 0, REX_W = 0;
 					unsigned char ext = 0x40;
 					Operand mem = (ZASMT_MEM == src._type_) ? src : dst,
 							reg = (ZASMT_MEM == src._type_) ? dst : src;
 
-					if (mem._mem_based_ && mem._mem_based_->_reg_ext_)	{ REX_B = 1; }
+					if (mem._reg_ext_)									{ REX_B = 1; }
 					if (mem._mem_index_ && mem._mem_index_->_reg_ext_)	{ REX_X = 1; }
 					if (reg._reg_ext_)									{ REX_R = 1; }
 
@@ -473,6 +473,7 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 				HEX_DUMP("Mod R/M", 1);
 			}
 
+
 			if (ZASMT_MEM == op_mem._type_ && op_mem._mem_scalar_) {	/* SIB */
 				/* 7       5         2        0
 				 * |-------|---------|--------|
@@ -493,6 +494,9 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 				sib = (scale & 0x03) << 6 | (index & 0x07) << 3 | (base & 0x07);
 				this->_code_[this->_len_ ++] = sib;
 				HEX_DUMP("SIB", 1);
+			} else if (op_mem._mem_based_ && op_mem._mem_based_->_reg_pos_ == 0x04) {
+				this->_code_[this->_len_ ++] = 0x24;
+				HEX_DUMP("SIB", 1);
 			}
 		}
 
@@ -500,23 +504,25 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 			Operand tgt = ZASMT_MEM == dst._type_ ? dst : src;
 
 			if (ZASMT_MEM == tgt._type_) {
-				switch (arch) {
-					case ARCH_X86_REAL_MODE:
-						if (ABS(tgt._mem_offset_) < (((off_t)1 << 7) - 1)) {
-							this->set_immediate(tgt._mem_offset_, CODE_OPERAND_SIZE_16);
-							HEX_DUMP("displacement", 2);
+				if (tgt._mem_scalar_ || !tgt._mem_based_ || tgt._mem_offset_) {
+					switch (arch) {
+						case ARCH_X86_REAL_MODE:
+							if (ABS(tgt._mem_offset_) < (((off_t)1 << 7) - 1)) {
+								this->set_immediate(tgt._mem_offset_, CODE_OPERAND_SIZE_16);
+								HEX_DUMP("displacement", 2);
+								break;
+							}
+						case ARCH_X86_LONG_MODE:
+							if (ABS(tgt._mem_offset_) < (((off_t)1 << 7) - 1)) {
+								this->set_immediate(tgt._mem_offset_, CODE_OPERAND_SIZE_8);
+								HEX_DUMP("displacement", 1);
+								break;
+							}
+						default:
+							this->set_immediate(tgt._mem_offset_, CODE_OPERAND_SIZE_32);
+							HEX_DUMP("displacement", 4);
 							break;
-						}
-					case ARCH_X86_LONG_MODE:
-						if (ABS(tgt._mem_offset_) < (((off_t)1 << 7) - 1)) {
-							this->set_immediate(tgt._mem_offset_, CODE_OPERAND_SIZE_8);
-							HEX_DUMP("displacement", 1);
-							break;
-						}
-					default:
-						this->set_immediate(tgt._mem_offset_, CODE_OPERAND_SIZE_32);
-						HEX_DUMP("displacement", 4);
-						break;
+					}
 				}
 			}
 		}

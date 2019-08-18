@@ -12,7 +12,7 @@ VIMRC=$(wildcard *.vim)
 
 all: $(BIN)
 
-$(BIN): $(SRC)
+$(BIN): $(OBJ)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 
 test: $(BIN)
