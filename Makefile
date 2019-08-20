@@ -8,19 +8,21 @@ SUBDIR=examples
 
 VIMRC=$(wildcard *.vim)
 
-.PHONY: all install test
+.PHONY: all install test $(SUBDIR)
 
 all: $(BIN)
 
 $(BIN): $(OBJ)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 
-test: $(BIN)
-	$(DEBUG) ln -sf ../Makefile.inc examples/Makefile.inc
+test: $(BIN) $(SUBDIR)
 	$(MAKE) -C examples
 
 install:
 	install -m644 $(VIMRC) ~/.vim/syntax/
+
+$(SUBDIR):
+	$(DEBUG) ln -sf ../Makefile.inc $@/Makefile.inc
 
 .PHONY: release
 ZASM_MAJOR=$(shell grep MAJOR $(BASEDIR)/include/zasm.h | awk '{print $$3}')
@@ -32,7 +34,7 @@ release: examples
 
 .PHONY: clean
 
-clean:
+clean: $(SUBDIR)
 	rm -rf $(BIN) $(OBJ)
 	$(MAKE) -C examples clean
 
