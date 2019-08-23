@@ -14,3 +14,5 @@
 
 std::string escape(std::string src, bool raw_string=true);
 bool asInt(std::string src, off_t &ret);
+
+#define LOG2(X) ((unsigned) (8*sizeof (unsigned long long) - __builtin_clzll((X)) - 1))

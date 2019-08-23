@@ -370,7 +370,6 @@ class Operand {
 			this->_size_    = CODE_OPERAND_SIZE_64;
 			this->_reg_pos_ = this->_mem_based_ ? this->_mem_based_->_reg_pos_ : 0x00;
 			this->_reg_ext_ = (this->_mem_based_ ? this->_mem_based_->_reg_ext_ : false);
-			this->_reg_ext_ = this->_reg_ext_ || (this->_mem_index_ ? this->_mem_index_->_reg_ext_ : false);
 
 			_D(LOG_DEBUG_X86_EMIT, "mem %-22s (%d) P:%d S:%c B:%c S:%d I:%c O:%c E:%c",
 				this->_token_.raw.c_str(),

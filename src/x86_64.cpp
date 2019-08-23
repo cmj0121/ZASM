@@ -474,7 +474,7 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 			}
 
 
-			if (ZASMT_MEM == op_mem._type_ && op_mem._mem_scalar_) {	/* SIB */
+			if (ZASMT_MEM == op_mem._type_ && (op_mem._mem_index_ || op_mem._mem_scalar_)) {	/* SIB */
 				/* 7       5         2        0
 				 * |-------|---------|--------|
 				 * | scale |  index  |  base  |
@@ -487,7 +487,7 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 				int scale = 0, index = 0, base = 0;
 				unsigned char sib = 0x00;
 
-				scale = op_mem._mem_scalar_ - 1;
+				scale = LOG2(op_mem._mem_scalar_);
 				index = op_mem._mem_index_->_reg_pos_;
 				base  = op_mem._reg_pos_;
 
