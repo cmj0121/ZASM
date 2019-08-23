@@ -60,7 +60,7 @@ std::string escape(std::string src, bool raw_string) {
 						if (src[i] >= '0' && src[i] <= '9') {
 							ch = ch * 16 + (src[i] - '0');
 						} else if ((src[i] | 0x20) >= 'a' && (src[i] | 0x20) <= 'f') {
-							ch = ch * 16 + ((src[i] + 0x20) - 'a') + 0x0A;
+							ch = ch * 16 + ((src[i] | 0x20) - 'a') + 0x0A;
 						} else {
 							_D(LOG_DEBUG, "token `%s` is invalid in position %zu", src.c_str(), i);
 							throw Exception(ERR_INVALID_TOKEN, "token `" + src + "` is invalid");
