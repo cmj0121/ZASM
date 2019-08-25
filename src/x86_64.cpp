@@ -277,6 +277,11 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 		this->_code_ = new (unsigned char )(MAX_X86_INSTRUCTION_LEN);
 		_D(LOG_DEBUG_X86_EMIT, "start emit the machine code 0x%02X (%d)...", inst.opcode, arch);
 
+		/* detect the memory register and memory register */
+		unsigned char rel = ARCH_X86_REAL_MODE == arch ? 0x06 : 0x05;
+		Operand op_reg = (ZASMT_MEM == src._type_ || ZASMT_REF == src._type_ ? dst : src),
+				op_mem = (ZASMT_MEM == src._type_ || ZASMT_REF == src._type_ ? src : dst);
+
 		{	/* legacy prefix*/
 			{	/* legacy prefix - group 1 (LOCK/REPNE/REP)          */
 				if (0 != (inst.flags & CODE_PRE_WAIT)) this->_code_[this->_len_ ++] = 0x9B;
@@ -341,12 +346,10 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 				if (0 != (CODE_OPERAND_SIZE_64 & (dst._size_ | src._size_)) || dst._reg_ext_ || src._reg_ext_) {
 					int REX_B = 0, REX_X = 0, REX_R = 0, REX_W = 0;
 					unsigned char ext = 0x40;
-					Operand mem = (ZASMT_MEM == src._type_) ? src : dst,
-							reg = (ZASMT_MEM == src._type_) ? dst : src;
 
-					if (mem._reg_ext_)									{ REX_B = 1; }
-					if (mem._mem_index_ && mem._mem_index_->_reg_ext_)	{ REX_X = 1; }
-					if (reg._reg_ext_)									{ REX_R = 1; }
+					if (op_mem._reg_ext_)										{ REX_B = 1; }
+					if (op_mem._mem_index_ && op_mem._mem_index_->_reg_ext_)	{ REX_X = 1; }
+					if (op_reg._reg_ext_)										{ REX_R = 1; }
 
 					if (CODE_OPERAND_SIZE_64 == (CODE_OPERAND_SIZE_64 & (dst._size_ | src._size_))) {
 						if (0xB8 == inst.opcode && CODE_OPERAND_SIZE_64 != src._size_) {
@@ -401,9 +404,6 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 			 *        Direct or indirect register operand, optionally with a displacement
 			 */
 			int mod = 0, reg = 0, rm = 0;
-			unsigned char rel = ARCH_X86_REAL_MODE == arch ? 0x06 : 0x05;
-			Operand op_reg = (ZASMT_MEM == dst._type_ || ZASMT_REF == dst._type_ ? src : dst),
-					op_mem = (ZASMT_MEM == dst._type_ || ZASMT_REF == dst._type_ ? dst : src);
 
 			/* process the MOD */
 			switch (op_mem._type_) {
@@ -416,6 +416,7 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 					mod = 0x00;
 					break;
 				case ZASMT_MEM:
+				case ZASMT_ADDR_OFF:
 					mod = 0x00;
 					if (op_mem._mem_based_) {
 						if (ABS(op_mem._mem_offset_))			mod = 0x01;
@@ -434,16 +435,15 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 			}
 
 			if (CODE_REG_FIELD == (CODE_REG_FIELD & inst.flags)) {
-				switch (op_reg._type_) {
+				switch (op_mem._type_) {
 					case ZASMT_REG:
+						rm  = op_reg._reg_pos_ | (op_reg._reg_highbyte_ ? 0x04 : 0x00);
+						reg = op_mem._reg_pos_ | (op_mem._reg_highbyte_ ? 0x04 : 0x00);
+						break;
+					default:
 						reg = op_reg._reg_pos_ | (op_reg._reg_highbyte_ ? 0x04 : 0x00);
 						rm  = op_mem._type_ == ZASMT_REF ? rel : op_mem._reg_pos_;
 						rm  = rm | (op_mem._reg_highbyte_ ? 0x04 : 0x00);
-						break;
-					case ZASMT_MEM:
-					default:
-						_D(LOG_CRIT, "Not Implemented #%d", dst._type_);
-						throw Exception(ERR_SYNTAX_ERROR, "Not Implemented");
 						break;
 				}
 
@@ -456,7 +456,7 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 					case ZASMT_UNKONWN:
 					case ZASMT_IMM:
 					case ZASMT_REG:
-						rm |= op_reg._reg_pos_;
+						rm |= op_mem._reg_pos_;
 						break;
 					case ZASMT_MEM:
 					case ZASMT_REF:
