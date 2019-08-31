@@ -86,9 +86,9 @@
 /* 0x66 - Operand-size override prefix */
 /* 0x67 - Address-size override prefix */
 {0x68, "push",		CODE_I_SIZE16_32,		CODE_NONE,				CODE_NONE},
-{0x69, "imul",		CODE_RM_SIZE16_32_64,	CODE_I_SIZE16,			CODE_NONE},
+{0x69, "imul",		CODE_RM_SIZE16_32_64,	CODE_I_SIZE16_32,		CODE_REG_FIELD},
 {0x6A, "push",		CODE_RM_SIZE8,			CODE_NONE,				CODE_NONE},
-{0x6B, "imul",		CODE_I_SIZE16_32,		CODE_I_SIZE8,			CODE_NONE},
+{0x6B, "imul",		CODE_RM_SIZE16_32_64,	CODE_I_SIZE8,			CODE_REG_FIELD},
 {0x6C, "ins",		CODE_M_SIZE8,			CODE_NONE,				CODE_NONE},
 {0x6D, "ins",		CODE_M_SIZE16_32,		CODE_NONE,				CODE_NONE},
 {0x6E, "outs",		CODE_M_SIZE8,			CODE_NONE,				CODE_NONE},

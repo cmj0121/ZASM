@@ -439,6 +439,11 @@ void ZasmCode::emit(std::string opcode, std::vector<ZasmToken> operands, ZasmCod
 					case ZASMT_REG:
 						rm  = op_reg._reg_pos_ | (op_reg._reg_highbyte_ ? 0x04 : 0x00);
 						reg = op_mem._reg_pos_ | (op_mem._reg_highbyte_ ? 0x04 : 0x00);
+
+						if (op_reg._type_ == ZASMT_IMM) {
+							/* NOTE - Special case or 0x69/0x6B with duplicate reg field */
+							rm = reg;
+						}
 						break;
 					default:
 						reg = op_reg._reg_pos_ | (op_reg._reg_highbyte_ ? 0x04 : 0x00);
